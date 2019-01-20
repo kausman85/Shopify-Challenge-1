@@ -157,38 +157,43 @@ app.post("/api/checkout-cart", (req, res) => {
   const id = validateInt(req.query.cart_id, 0);
   if (id) {
     client.query(`SELECT checkout FROM carts WHERE id = ${id} AND checkout = false;`).then(ret => {
-      client.query(`
+      if (ret.rows.length !== 0) {
+        client.query(`
           SELECT name, product_id, inventory - COUNT(product_id) AS new_inventory
           FROM cart_items, products
           WHERE cart_id = ${id} AND cart_items.product_id = products.id
           GROUP BY product_id, products.id;`).then(ret => {
-        console.log({ret});
-        let query = `
+          console.log({ret});
+          let query = `
             UPDATE carts SET checkout = true WHERE id = ${id};
             SELECT SUM(price) AS price FROM products, cart_items WHERE cart_items.cart_id = ${id} AND cart_items.product_id = products.id;`;
-        for (let i = 0; i < ret.rows.length; i++) {
-          if (ret.rows[i].new_inventory < 0) {
-            res.status(400).json({error: "Not enough inventory for product " + ret.rows[i].name});
-            return;
+          for (let i = 0; i < ret.rows.length; i++) {
+            if (ret.rows[i].new_inventory < 0) {
+              res.status(400).json({error: "Not enough inventory for product " + ret.rows[i].name});
+              return;
+            }
+
+            query = query + `UPDATE products SET inventory = ${ret.rows[i].new_inventory} WHERE id = ${ret.rows[i].product_id};`;
           }
 
-          query = query + `UPDATE products SET inventory = ${ret.rows[i].new_inventory} WHERE id = ${ret.rows[i].product_id};`;
-        }
-
-        console.log({query});
-        client.query(query).then(ret => {
-          console.log({ret});
-          res.status(200).json({data: "Checked out. Total price: $" + ret[1].rows[0].price});
+          console.log({query});
+          client.query(query).then(ret => {
+            console.log({ret});
+            res.status(200).json({data: "Checked out. Total price: " + ret[1].rows[0].price});
+          }).catch(err => {
+            console.error(err);
+            res.status(500).json({error: "Unknown error"});
+          });
         }).catch(err => {
           console.error(err);
           res.status(500).json({error: "Unknown error"});
         });
-      }).catch(err => {
-        console.error(err);
-        res.status(500).json({error: "Unknown error"});
-      });
+      } else {
+        res.status(400).json({error: "Cart not found or is already checkout out"});
+      }
     }).catch(err => {
-      res.status(400).json({error: "Cart not found or is already checkout out"});
+      console.error(err);
+      res.status(500).json({error: "Unknown error"});
     });
   } else {
     res.status(400).json({error: "Invalid parameter(s)"});
