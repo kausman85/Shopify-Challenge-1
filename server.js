@@ -17,7 +17,7 @@ const server = app.listen(process.env.PORT || 8080, async function () {
   console.log("App now running on port", port);
 });
 
-app.post("api/inject-test-data", (req, res) => {
+app.post("/api/inject-test-data", (req, res) => {
   const testProducts = [
     ['Jacket',    4, 49.99],
     ['T-Shirt',   8, 9.99],
