@@ -6,7 +6,7 @@ API endpoint: https://shopify-challenge-kaushal.herokuapp.com/
 
 _POST /api/inject-test-data_
 \
-API to populate database with default values for products. Overwrites current values.
+API to populate database with default values for products. Overwrites current values and deletes all carts.
 
 _POST /api/add-product_
 \

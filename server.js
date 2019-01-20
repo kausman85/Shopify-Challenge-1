@@ -39,7 +39,7 @@ const server = app.listen(process.env.PORT || 8080, async function () {
   console.log("App now running on port", port);
 });
 
-// API to populate database with default values for products. Overwrites current values.
+// API to populate database with default values for products. Overwrites current values and deletes all carts.
 app.post("/api/inject-test-data", (req, res) => {
   const testProducts = [
     ['Jacket',    4, 49.99],
@@ -52,7 +52,7 @@ app.post("/api/inject-test-data", (req, res) => {
     ['Underwear', 9, 19.99]
   ];
 
-  const query = 'DELETE FROM products; ' + testProducts.map(product =>
+  const query = 'DELETE FROM cart_items; DELETE FROM carts; DELETE FROM products; ' + testProducts.map(product =>
     `INSERT INTO products(name, inventory, price) VALUES('${product[0]}', ${product[1]}, ${product[2]});`).join('');
   client.query(query).then(ret => {
     res.status(200).json({data: "Products reset to test data"})
