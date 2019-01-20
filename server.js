@@ -117,10 +117,9 @@ app.post("/api/add-product", (req, res) => {
 });
 
 app.post("/api/create-cart", (req, res) => {
-  client.query("INSERT INTO carts(checkout) VALUES(false);").then(ret => {
+  client.query("INSERT INTO carts(checkout) VALUES(false) RETURNING id;").then(ret => {
     console.log({ret});
-    client.query("SELECT * FROM carts;").then(abc => console.log({abc}));
-    res.status(200).json({data: "Done"});
+    res.status(200).json({data: "Created cart with id " + ret.id});
   }).catch(err => {
     res.status(500).json({error: "Unknown error"});
   });
