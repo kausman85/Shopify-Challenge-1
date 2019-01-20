@@ -60,7 +60,7 @@ app.get("/api/get-products", (req, res) => {
   const query = "SELECT * FROM products" + (isTrue(req.query.get_only_in_stock) ? " WHERE inventory > 0" : "");
   client.query(query).then(ret => {
     const response = ret.rows.map(product => {return {
-      title: product.title,
+      title: product.name,
       price: product.price,
       inventory_count: product.inventory
     }});
@@ -72,7 +72,7 @@ app.get("/api/get-products", (req, res) => {
 });
 
 app.post("/api/add-product", (req, res) => {
-  const name = validateString(req.query.name);
+  const name = validateString(req.query.title);
   const inventory = validateInt(req.query.inventory_count, 0, 99999);
   const price = validateMoney(req.query.price, 0, 9999.99);
   console.log({name, inventory, price});
