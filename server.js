@@ -17,7 +17,7 @@ function validateString(str) {
 
 function validateInt(str, lower, upper) {
   const val = Number(str);
-  return val && val === Math.round(val) && val >= lower && val <= upper && val;
+  return val && val === Math.round(val) && val >= lower && (!upper || val <= upper) && val;
 }
 
 function validateMoney(str, lower, upper) {
@@ -89,7 +89,7 @@ app.post("/api/add-product", (req, res) => {
 });
 
 app.post("/api/purchase-product", (req, res) => {
-  const id = validateInt(req.query.id);
+  const id = validateInt(req.query.id, 0);
   if (id) {
     client.query(`SELECT id, inventory FROM products WHERE id = ${id};`).then(ret => {
       if (ret.rows.length === 0) {
