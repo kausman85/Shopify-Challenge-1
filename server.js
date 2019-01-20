@@ -72,10 +72,10 @@ app.get("/api/get-products", (req, res) => {
 });
 
 app.post("/api/add-product", (req, res) => {
-  console.log({req});
   const name = validateString(req.query.name);
   const inventory = validateInt(req.query.inventory_count, 0, 99999);
   const price = validateMoney(req.query.price, 0, 9999.99);
+  console.log({name, inventory, price});
   if (name && inventory && price) {
     client.query(`INSERT INTO products(name, inventory, price) VALUES('${name}', ${inventory}, ${price});`).then(ret => {
       res.status(200).json({data: "Added product"});
