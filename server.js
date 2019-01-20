@@ -120,9 +120,9 @@ app.post("/api/add-product", (req, res) => {
   }
 });
 
+// Creates new cart and returns id of cart.
 app.post("/api/create-cart", (req, res) => {
   client.query("INSERT INTO carts(checkout) VALUES(false) RETURNING id;").then(ret => {
-    console.log({ret});
     res.status(200).json({data: "Created cart with id " + ret.rows[0].id});
   }).catch(err => {
     console.error(err);
@@ -130,6 +130,9 @@ app.post("/api/create-cart", (req, res) => {
   });
 });
 
+// Adds item to cart.
+// Param: cart_id (int): id of cart. Cart must not be checked out.
+// Param: product_id (int): id of product.
 app.post("/api/add-item-to-cart", (req, res) => {
   const cart_id = validateInt(req.query.cart_id, 0);
   const product_id = validateInt(req.query.product_id, 0);
@@ -153,6 +156,8 @@ app.post("/api/add-item-to-cart", (req, res) => {
   }
 });
 
+// Proceeds to checkout for cart. Ensures that all products have inventory. Returns total price of products.
+// Param: cart_id (int): id of cart. Cart must not be checked out.
 app.post("/api/checkout-cart", (req, res) => {
   const id = validateInt(req.query.cart_id, 0);
   if (id) {
@@ -163,7 +168,6 @@ app.post("/api/checkout-cart", (req, res) => {
           FROM cart_items, products
           WHERE cart_id = ${id} AND cart_items.product_id = products.id
           GROUP BY product_id, products.id;`).then(ret => {
-          console.log({ret});
           let query = `
             UPDATE carts SET checkout = true WHERE id = ${id};
             SELECT SUM(price) AS price FROM products, cart_items WHERE cart_items.cart_id = ${id} AND cart_items.product_id = products.id;`;
@@ -176,9 +180,7 @@ app.post("/api/checkout-cart", (req, res) => {
             query = query + `UPDATE products SET inventory = ${ret.rows[i].new_inventory} WHERE id = ${ret.rows[i].product_id};`;
           }
 
-          console.log({query});
           client.query(query).then(ret => {
-            console.log({ret});
             res.status(200).json({data: "Checked out. Total price: " + ret[1].rows[0].price});
           }).catch(err => {
             console.error(err);
@@ -190,33 +192,6 @@ app.post("/api/checkout-cart", (req, res) => {
         });
       } else {
         res.status(400).json({error: "Cart not found or is already checkout out"});
-      }
-    }).catch(err => {
-      console.error(err);
-      res.status(500).json({error: "Unknown error"});
-    });
-  } else {
-    res.status(400).json({error: "Invalid parameter(s)"});
-  }
-});
-
-// Purchases a product. Reduces inventory of product by one. Product must be in stock.
-// Param: id (int): id of product
-app.post("/api/purchase-product", (req, res) => {
-  const id = validateInt(req.query.product_id, 0);
-  if (id) {
-    client.query(`SELECT id, inventory FROM products WHERE id = ${id};`).then(ret => {
-      if (ret.rows.length === 0) {
-        res.status(400).json({error: "Product not found"});
-      } else if (ret.rows[0].inventory <= 0) {
-        res.status(400).json({error: "No inventory"});
-      } else {
-        client.query(`UPDATE products SET inventory = ${ret.rows[0].inventory - 1} WHERE id = ${ret.rows[0].id};`).then(ret => {
-          res.status(200).json({data: "Purchased product"});
-        }).catch(err => {
-          console.error(err);
-          res.status(500).json({error: "Unknown error"});
-        });
       }
     }).catch(err => {
       console.error(err);

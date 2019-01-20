@@ -30,8 +30,20 @@ Returns one product.
 \
 Param: product_id (int): id of product.
 
-_POST /api/purchase-product_
+_POST /api/create-cart_
 \
-Purchases a product. Reduces inventory of product by one. Product must be in stock.
+Creates new cart and returns id of cart. 
+
+_POST /api/add-item-to-cart_
 \
-Param: product_id (int): id of product
+Adds item to cart.
+\
+Param: cart_id (int): id of cart. Cart must not be checked out.
+\
+Param: product_id (int): id of product. 
+
+_POST /api/checkout-cart_
+\
+Proceeds to checkout for cart. Ensures that all products have inventory. Returns total price of products. 
+\
+Param: cart_id (int): id of cart. Cart must not be checked out.
