@@ -1,4 +1,4 @@
-const express = require('express')
+const express = require('express');
 const bodyParser = require("body-parser");
 
 const { Pool } = require('pg');
@@ -17,9 +17,22 @@ const server = app.listen(process.env.PORT || 8080, async function () {
   console.log("App now running on port", port);
 });
 
-app.get("/api/test", (req, res) => {
-  client.query('SELECT * FROM test_table').then(data => {
-    res.status(200).json({results: data.rows});
+app.post("api/inject-test-data", (req, res) => {
+  const testProducts = [
+    ['Jacket',    4, 49.99],
+    ['T-Shirt',   8, 9.99],
+    ['Sweater',   0, 19.99],
+    ['Pants',     5, 19.99],
+    ['Socks',     1, 9.99],
+    ['Shoes',     2, 39.99],
+    ['Mittens',   5, 9.99],
+    ['Underwear', 9, 19.99]
+  ];
+
+  const query = 'DELETE FROM products; ' + testProducts.map(product =>
+    `INSERT INTO products(name, inventory, price) VALUES('${product[0]}', ${product[1]}, ${product[2]});`).join('');
+  client.query(query).then(ret => {
+    res.status(200).json({data: "Products reset to test data."})
   }).catch(err => {
     res.status(500).json({error: err});
   });
