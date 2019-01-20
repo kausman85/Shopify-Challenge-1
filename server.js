@@ -37,3 +37,15 @@ app.post("/api/inject-test-data", (req, res) => {
     res.status(500).json({error: err});
   });
 });
+
+app.get("/api/get-products", (req, res) => {
+  console.log(req);
+  res.status(200).json({data: req});
+  return;
+  const query = "SELECT * FROM products" + (req.get_only_in_stock ? " WHERE inventory > 0" : "");
+  client.query(query).then(ret => {
+    res.status(200).json({data: ret.rows})
+  }).catch(err => {
+    res.status(500).json({error: err});
+  });
+});
