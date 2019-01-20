@@ -7,6 +7,10 @@ const pool = new Pool({
   ssl: true
 });
 
+function isTrue(str) {
+  return str && (str === true || str === 'true' || str === 'True');
+}
+
 const app = express();
 app.use(bodyParser.json());
 let client;
@@ -39,10 +43,7 @@ app.post("/api/inject-test-data", (req, res) => {
 });
 
 app.get("/api/get-products", (req, res) => {
-  console.log(req);
-  res.status(200).json({data: req});
-  return;
-  const query = "SELECT * FROM products" + (req.get_only_in_stock ? " WHERE inventory > 0" : "");
+  const query = "SELECT * FROM products" + (isTrue(req.query.get_only_in_stock) ? " WHERE inventory > 0" : "");
   client.query(query).then(ret => {
     res.status(200).json({data: ret.rows})
   }).catch(err => {
