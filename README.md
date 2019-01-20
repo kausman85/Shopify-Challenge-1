@@ -28,10 +28,10 @@ _GET /api/get-product_
 \
 Returns one product.
 \
-Param: id (int): id of product.
+Param: product_id (int): id of product.
 
 _POST /api/purchase-product_
 \
 Purchases a product. Reduces inventory of product by one. Product must be in stock.
 \
-Param: id (int): id of product
+Param: product_id (int): id of product

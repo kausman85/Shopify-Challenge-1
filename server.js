@@ -82,7 +82,7 @@ app.get("/api/get-products", (req, res) => {
 // Returns one product.
 // Param: id (int): id of product.
 app.get("/api/get-product", (req, res) => {
-  const id = validateInt(req.query.id, 0);
+  const id = validateInt(req.query.product_id, 0);
   client.query("SELECT * FROM products WHERE id = 0" + id).then(ret => {
     const response = {
       id: ret.rows[0].id,
@@ -116,10 +116,75 @@ app.post("/api/add-product", (req, res) => {
   }
 });
 
+app.post("/api/create-cart", (req, res) => {
+  client.query("INSERT INTO carts(checkout) VALUES(false);").then(ret => {
+    console.log({ret});
+    client.query("SELECT * FROM carts;").then(abc => console.log({abc}));
+    res.status(200).json({data: "Done"});
+  }).catch(err => {
+    res.status(500).json({error: "Unknown error"});
+  });
+});
+
+app.post("/api/add-item-to-cart", (req, res) => {
+  const cart_id = validateInt(req.query.cart_id, 0);
+  const product_id = validateInt(req.query.product_id, 0);
+  if (cart_id && product_id) {
+    client.query(`SELECT * carts WHERE id = ${cart_id}; AND checkout = false`).then(ret => {
+      if (ret.rows.length !== 0) {
+        client.query(`SELECT inventory FROM products WHERE id = ${product_id}`).then(ret => {
+          console.log({ret});
+          if (ret.rows.length === 0) {
+            res.status(400).json({error: "Product not found"});
+          } else if (ret.rows[0].inventory <= 0) {
+            res.status(400).json({error: "No inventory"});
+          } else {
+            client.query(`
+                INSERT INTO cart_items(product_id, cart_id) VALUES(${product_id}, ${cart_id});
+                UPDATE products SET inventory = ${ret.rows[0].inventory - 1} WHERE id = ${product_id};`).then(ret => {
+              res.status(200).json({data: "Added product to cart"});
+            }).catch(err => {
+              res.status(500).json({error: "Unknown error"});
+            });
+          }
+        }).catch(err => {
+          res.status(500).json({error: "Unknown error"});
+        });
+      } else {
+        res.status(400).json({error: "Cart not found or is already checked out"});
+      }
+    }).catch(err => {
+      res.status(500).json({error: "Unknown error"});
+    });
+  } else {
+    res.status(400).json({error: "Invalid parameter(s)"});
+  }
+});
+
+app.post("/api/checkout-cart", (req, res) => {
+  const id = validateInt(req.query.cart_id, 0);
+  if (id) {
+    client.query(`SELECT checkout FROM carts WHERE id = ${id} AND checkout = false;`).then(ret => {
+      client.query(`
+        UPDATE carts SET checkout = true WHERE id = ${id};
+        SELECT SUM(price) AS price FROM products, cart_items WHERE cart_items.cart_id = ${id} AND cart_items.product_id = products.id;`).then(ret => {
+        console.log({ret});
+        res.status(200).json({data: "Checked out. Total price: $" + ret.rows[0].price});
+      }).catch(err => {
+        res.status(500).json({error: "Unknown error"});
+      });
+    }).catch(err => {
+      res.status(400).json({error: "Cart not found or is already checkout out"});
+    });
+  } else {
+    res.status(400).json({error: "Invalid parameter(s)"});
+  }
+});
+
 // Purchases a product. Reduces inventory of product by one. Product must be in stock.
 // Param: id (int): id of product
 app.post("/api/purchase-product", (req, res) => {
-  const id = validateInt(req.query.id, 0);
+  const id = validateInt(req.query.product_id, 0);
   if (id) {
     client.query(`SELECT id, inventory FROM products WHERE id = ${id};`).then(ret => {
       if (ret.rows.length === 0) {
