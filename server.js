@@ -60,6 +60,7 @@ app.get("/api/get-products", (req, res) => {
   const query = "SELECT * FROM products" + (isTrue(req.query.get_only_in_stock) ? " WHERE inventory > 0" : "");
   client.query(query).then(ret => {
     const response = ret.rows.map(product => {return {
+      id: product.id,
       title: product.name,
       price: product.price,
       inventory_count: product.inventory
@@ -79,6 +80,29 @@ app.post("/api/add-product", (req, res) => {
   if (name && inventory && price) {
     client.query(`INSERT INTO products(name, inventory, price) VALUES('${name}', ${inventory}, ${price});`).then(ret => {
       res.status(200).json({data: "Added product"});
+    }).catch(err => {
+      res.status(500).json({error: err});
+    });
+  } else {
+    res.status(400).json({error: "Invalid parameter(s)"});
+  }
+});
+
+app.post("/api/purchase-product", (req, res) => {
+  const id = validateInt(req.query.id);
+  if (id) {
+    client.query(`SELECT id, inventory FROM products WHERE id = ${id};`).then(ret => {
+      if (ret.rows.length === 0) {
+        res.status(400).json({error: "Product not found"});
+      } else if (ret.rows[0].inventory <= 0) {
+        res.status(400).json({error: "No inventory"});
+      } else {
+        client.query(`UPDATE products SET inventory = ${ret.rows[0].inventory - 1} WHERE id = ${ret.rows[0].id};`).then(ret => {
+          res.status(200).json({data: "Purchased product"});
+        }).catch(err => {
+          res.status(500).json({error: err});
+        });
+      }
     }).catch(err => {
       res.status(500).json({error: err});
     });
