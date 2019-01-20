@@ -136,25 +136,10 @@ app.post("/api/add-item-to-cart", (req, res) => {
   if (cart_id && product_id) {
     client.query(`SELECT * FROM carts WHERE id = ${cart_id} AND checkout = false;`).then(ret => {
       if (ret.rows.length !== 0) {
-        client.query(`SELECT inventory FROM products WHERE id = ${product_id}`).then(ret => {
-          console.log({ret});
-          if (ret.rows.length === 0) {
-            res.status(400).json({error: "Product not found"});
-          } else if (ret.rows[0].inventory <= 0) {
-            res.status(400).json({error: "No inventory"});
-          } else {
-            client.query(`
-                INSERT INTO cart_items(product_id, cart_id) VALUES(${product_id}, ${cart_id});
-                UPDATE products SET inventory = ${ret.rows[0].inventory - 1} WHERE id = ${product_id};`).then(ret => {
-              res.status(200).json({data: "Added product to cart"});
-            }).catch(err => {
-              console.error(err);
-              res.status(500).json({error: "Unknown error"});
-            });
-          }
+        client.query(`INSERT INTO cart_items(product_id, cart_id) VALUES(${product_id}, ${cart_id});`).then(ret => {
+          res.status(200).json({data: "Added product to cart"});
         }).catch(err => {
-          console.error(err);
-          res.status(500).json({error: "Unknown error"});
+          res.status(500).json({error: "Product not found"});
         });
       } else {
         res.status(400).json({error: "Cart not found or is already checked out"});
@@ -173,10 +158,31 @@ app.post("/api/checkout-cart", (req, res) => {
   if (id) {
     client.query(`SELECT checkout FROM carts WHERE id = ${id} AND checkout = false;`).then(ret => {
       client.query(`
-        UPDATE carts SET checkout = true WHERE id = ${id};
-        SELECT SUM(price) AS price FROM products, cart_items WHERE cart_items.cart_id = ${id} AND cart_items.product_id = products.id;`).then(ret => {
+          SELECT name, product_id, inventory - COUNT(product_id) AS new_inventory
+          FROM cart_items, products
+          WHERE cart_id = ${id} AND cart_items.product_id = products.id
+          GROUP BY product_id, products.id;`).then(ret => {
         console.log({ret});
-        res.status(200).json({data: "Checked out. Total price: $" + ret[1].rows[0].price});
+        let query = `
+            UPDATE carts SET checkout = true WHERE id = ${id};
+            SELECT SUM(price) AS price FROM products, cart_items WHERE cart_items.cart_id = ${id} AND cart_items.product_id = products.id;`;
+        for (let i = 0; i < ret.rows.length; i++) {
+          if (ret.rows[i].new_inventory < 0) {
+            res.status(400).json({error: "Not enough inventory for product " + ret.rows[i].name});
+            return;
+          }
+
+          query = query + `UPDATE products SET inventory = ${ret.rows[i].new_inventory} WHERE id = ${ret.rows[i].product_id};`;
+        }
+
+        console.log({query});
+        client.query(query).then(ret => {
+          console.log({ret});
+          res.status(200).json({data: "Checked out. Total price: $" + ret[1].rows[0].price});
+        }).catch(err => {
+          console.error(err);
+          res.status(500).json({error: "Unknown error"});
+        });
       }).catch(err => {
         console.error(err);
         res.status(500).json({error: "Unknown error"});
