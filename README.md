@@ -12,7 +12,7 @@ _POST /api/add-product_
 \
 Adds product.
 \
-Param: name (string): name of product
+Param: title (string): name of product
 \
 Param: inventory_count (int between 0 and 99,999): inventory of product
 \

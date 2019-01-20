@@ -85,23 +85,31 @@ app.get("/api/get-products", (req, res) => {
 // Param: id (int): id of product.
 app.get("/api/get-product", (req, res) => {
   const id = validateInt(req.query.product_id, 0);
-  client.query("SELECT * FROM products WHERE id = 0" + id).then(ret => {
-    const response = {
-      id: ret.rows[0].id,
-      title: ret.rows[0].name,
-      price: ret.rows[0].price,
-      inventory_count: ret.rows[0].inventory
-    };
+  if (id) {
+    client.query("SELECT * FROM products WHERE id = 0" + id).then(ret => {
+      if (ret.rows.length !== 0) {
+        const response = {
+          id: ret.rows[0].id,
+          title: ret.rows[0].name,
+          price: ret.rows[0].price,
+          inventory_count: ret.rows[0].inventory
+        };
 
-    res.status(200).json({data: response})
-  }).catch(err => {
-    console.error(err);
-    res.status(500).json({error: "Unknown error"});
-  });
+        res.status(200).json({data: response})
+      } else {
+        res.status(400).json({error: "Product not found"});
+      }
+    }).catch(err => {
+      console.error(err);
+      res.status(500).json({error: "Unknown error"});
+    });
+  } else {
+    res.status(400).json({error: "Invalid parameter"});
+  }
 });
 
 // Adds product.
-// Param: name (string): name of product
+// Param: title (string): name of product
 // Param: inventory_count (int between 0 and 99,999): inventory of product
 // Param: price (USD amount between 0 and 9,999.99): price of product
 app.post("/api/add-product", (req, res) => {
