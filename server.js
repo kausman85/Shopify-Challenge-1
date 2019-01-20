@@ -45,7 +45,13 @@ app.post("/api/inject-test-data", (req, res) => {
 app.get("/api/get-products", (req, res) => {
   const query = "SELECT * FROM products" + (isTrue(req.query.get_only_in_stock) ? " WHERE inventory > 0" : "");
   client.query(query).then(ret => {
-    res.status(200).json({data: ret.rows})
+    const response = ret.rows.map(product => {return {
+      title: product.title,
+      price: product.price,
+      inventory_count: product.inventory
+    }});
+
+    res.status(200).json({data: response})
   }).catch(err => {
     res.status(500).json({error: err});
   });
