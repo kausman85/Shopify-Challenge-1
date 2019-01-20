@@ -11,6 +11,20 @@ function isTrue(str) {
   return str && (str === true || str === 'true' || str === 'True');
 }
 
+function validateString(str) {
+  return str && str.length > 0 && /^[a-zA-Z0-9-_,./?!#%&*()]*$/.test(str) && str;
+}
+
+function validateInt(str, lower, upper) {
+  const val = Number(str);
+  return val && val === Math.round(val) && val >= lower && val <= upper && val;
+}
+
+function validateMoney(str, lower, upper) {
+  const val = Number(str * 100);
+  return validateInt(val, lower, upper) && val / 100;
+}
+
 const app = express();
 app.use(bodyParser.json());
 let client;
@@ -36,7 +50,7 @@ app.post("/api/inject-test-data", (req, res) => {
   const query = 'DELETE FROM products; ' + testProducts.map(product =>
     `INSERT INTO products(name, inventory, price) VALUES('${product[0]}', ${product[1]}, ${product[2]});`).join('');
   client.query(query).then(ret => {
-    res.status(200).json({data: "Products reset to test data."})
+    res.status(200).json({data: "Products reset to test data"})
   }).catch(err => {
     res.status(500).json({error: err});
   });
@@ -55,4 +69,20 @@ app.get("/api/get-products", (req, res) => {
   }).catch(err => {
     res.status(500).json({error: err});
   });
+});
+
+app.post("/api/add-product", (req, res) => {
+  console.log({req});
+  const name = validateString(req.query.name);
+  const inventory = validateInt(req.query.inventory_count);
+  const price = validateMoney(req.query.price);
+  if (name && inventory && price) {
+    client.query(`INSERT INTO products(name, inventory, price) VALUES('${name}', ${inventory}, ${price});`).then(ret => {
+      res.status(200).json({data: "Added product"});
+    }).catch(err => {
+      res.status(500).json({error: err});
+    });
+  } else {
+    res.status(400).json({error: "Invalid parameter(s)"});
+  }
 });
