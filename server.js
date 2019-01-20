@@ -57,6 +57,7 @@ app.post("/api/inject-test-data", (req, res) => {
   client.query(query).then(ret => {
     res.status(200).json({data: "Products reset to test data"})
   }).catch(err => {
+    console.error(err);
     res.status(500).json({error: "Unknown error"});
   });
 });
@@ -75,6 +76,7 @@ app.get("/api/get-products", (req, res) => {
 
     res.status(200).json({data: response})
   }).catch(err => {
+    console.error(err);
     res.status(500).json({error: "Unknown error"});
   });
 });
@@ -93,6 +95,7 @@ app.get("/api/get-product", (req, res) => {
 
     res.status(200).json({data: response})
   }).catch(err => {
+    console.error(err);
     res.status(500).json({error: "Unknown error"});
   });
 });
@@ -109,6 +112,7 @@ app.post("/api/add-product", (req, res) => {
     client.query(`INSERT INTO products(name, inventory, price) VALUES('${name}', ${inventory}, ${price});`).then(ret => {
       res.status(200).json({data: "Added product"});
     }).catch(err => {
+      console.error(err);
       res.status(500).json({error: "Unknown error"});
     });
   } else {
@@ -119,8 +123,9 @@ app.post("/api/add-product", (req, res) => {
 app.post("/api/create-cart", (req, res) => {
   client.query("INSERT INTO carts(checkout) VALUES(false) RETURNING id;").then(ret => {
     console.log({ret});
-    res.status(200).json({data: "Created cart with id " + ret.id});
+    res.status(200).json({data: "Created cart with id " + ret.rows[0].id});
   }).catch(err => {
+    console.error(err);
     res.status(500).json({error: "Unknown error"});
   });
 });
@@ -143,16 +148,19 @@ app.post("/api/add-item-to-cart", (req, res) => {
                 UPDATE products SET inventory = ${ret.rows[0].inventory - 1} WHERE id = ${product_id};`).then(ret => {
               res.status(200).json({data: "Added product to cart"});
             }).catch(err => {
+              console.error(err);
               res.status(500).json({error: "Unknown error"});
             });
           }
         }).catch(err => {
+          console.error(err);
           res.status(500).json({error: "Unknown error"});
         });
       } else {
         res.status(400).json({error: "Cart not found or is already checked out"});
       }
     }).catch(err => {
+      console.error(err);
       res.status(500).json({error: "Unknown error"});
     });
   } else {
@@ -170,6 +178,7 @@ app.post("/api/checkout-cart", (req, res) => {
         console.log({ret});
         res.status(200).json({data: "Checked out. Total price: $" + ret.rows[0].price});
       }).catch(err => {
+        console.error(err);
         res.status(500).json({error: "Unknown error"});
       });
     }).catch(err => {
@@ -194,10 +203,12 @@ app.post("/api/purchase-product", (req, res) => {
         client.query(`UPDATE products SET inventory = ${ret.rows[0].inventory - 1} WHERE id = ${ret.rows[0].id};`).then(ret => {
           res.status(200).json({data: "Purchased product"});
         }).catch(err => {
+          console.error(err);
           res.status(500).json({error: "Unknown error"});
         });
       }
     }).catch(err => {
+      console.error(err);
       res.status(500).json({error: "Unknown error"});
     });
   } else {
