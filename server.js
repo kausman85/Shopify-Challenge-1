@@ -21,8 +21,8 @@ function validateInt(str, lower, upper) {
 }
 
 function validateMoney(str, lower, upper) {
-  const val = Number(str * 100);
-  return validateInt(val, lower, upper) && val / 100;
+  const val = Number(str) * 100;
+  return validateInt(val, lower * 100, upper * 100) && val / 100;
 }
 
 const app = express();
@@ -74,8 +74,8 @@ app.get("/api/get-products", (req, res) => {
 app.post("/api/add-product", (req, res) => {
   console.log({req});
   const name = validateString(req.query.name);
-  const inventory = validateInt(req.query.inventory_count);
-  const price = validateMoney(req.query.price);
+  const inventory = validateInt(req.query.inventory_count, 0, 99999);
+  const price = validateMoney(req.query.price, 0, 9999.99);
   if (name && inventory && price) {
     client.query(`INSERT INTO products(name, inventory, price) VALUES('${name}', ${inventory}, ${price});`).then(ret => {
       res.status(200).json({data: "Added product"});
