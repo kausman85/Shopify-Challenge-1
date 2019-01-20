@@ -134,7 +134,7 @@ app.post("/api/add-item-to-cart", (req, res) => {
   const cart_id = validateInt(req.query.cart_id, 0);
   const product_id = validateInt(req.query.product_id, 0);
   if (cart_id && product_id) {
-    client.query(`SELECT * carts WHERE id = ${cart_id}; AND checkout = false`).then(ret => {
+    client.query(`SELECT * FROM carts WHERE id = ${cart_id} AND checkout = false;`).then(ret => {
       if (ret.rows.length !== 0) {
         client.query(`SELECT inventory FROM products WHERE id = ${product_id}`).then(ret => {
           console.log({ret});
@@ -176,7 +176,7 @@ app.post("/api/checkout-cart", (req, res) => {
         UPDATE carts SET checkout = true WHERE id = ${id};
         SELECT SUM(price) AS price FROM products, cart_items WHERE cart_items.cart_id = ${id} AND cart_items.product_id = products.id;`).then(ret => {
         console.log({ret});
-        res.status(200).json({data: "Checked out. Total price: $" + ret.rows[0].price});
+        res.status(200).json({data: "Checked out. Total price: $" + ret[1].rows[0].price});
       }).catch(err => {
         console.error(err);
         res.status(500).json({error: "Unknown error"});
