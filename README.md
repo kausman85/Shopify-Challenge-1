@@ -2,6 +2,8 @@
 
 API endpoint: https://shopify-challenge-kaushal.herokuapp.com/
 
+Note: all parameters are passed as URL parameters (NOT in the body). 
+
 **Available APIs:**
 
 _POST /api/inject-test-data_
@@ -47,3 +49,9 @@ _POST /api/checkout-cart_
 Proceeds to checkout for cart. Ensures that all products have inventory. Returns total price of products. 
 \
 Param: cart_id (int): id of cart. Cart must not be checked out.
+
+**Sample CURL calls:**
+
+curl "https://shopify-challenge-kaushal.herokuapp.com/api/get-products"
+
+curl -X POST "https://shopify-challenge-kaushal.herokuapp.com/api/add-item-to-cart?cart_id=1&product_id=1"
